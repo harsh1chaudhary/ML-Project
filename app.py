@@ -1,7 +1,7 @@
 from flask import Flask, Response, render_template
 import cv2
 from ultralytics import YOLO
-
+#work
 # Initialize the Flask app
 app = Flask(__name__)
 
@@ -11,7 +11,8 @@ model = YOLO('yolov8n.pt')
 # Open the webcam
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    raise Exception("Error: Could not open camera.")
+    print("Error: Could not access the camera.")
+    exit(1)
 
 def generate_frames():
     while True:
