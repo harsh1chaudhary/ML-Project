@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+            text-align: center;
+            transition: background-color 1s ease; /* Smooth transition for color change */
+        }
+
+        /* Content Layer */
+        .content {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Heading style */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        /* Image styling: Centered and resized */
+        img {
+            width: 50%;   /* Reduce width to 50% */
+            height: 50%;  /* Reduce height to 50% */
+            object-fit: contain;  /* Ensure the aspect ratio is maintained */
+            border: 4px solid #444;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Footer text styling */
+        p {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Real-time Object Detection</h1>
+        <img src="{{ url_for('video_feed') }}" alt="Real-time Object Detection Feed">
+        <p>Press "Ctrl + C" in the terminal to stop the server.</p>
+    </div>
+
+    <script>
+        // Function to fetch counts and change background color dynamically
+        function updateBackgroundColor() {
+            fetch('/get_counts')
+                .then(response => response.json())
+                .then(data => {
+                    const humanCount = data.human_count;
+                    const totalObjects = data.total_objects;
+
+                    // Decide background color based on object count
+                    let backgroundColor;
+                    if (humanCount > totalObjects) {
+                        backgroundColor = '#6ccacf'; // Light cyan for more humans
+                    } else if (totalObjects > humanCount) {
+                        backgroundColor = '#a7e6e4'; // Light blue for more objects
+                    } else {
+                        backgroundColor = '#f1f1f1'; // Neutral gray for equal numbers
+                    }
+
+                    // Set the background color dynamically
+                    document.body.style.backgroundColor = backgroundColor;
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Update the background color every second
+        setInterval(updateBackgroundColor, 1000);
+    </script>
+</body>
+</html>
