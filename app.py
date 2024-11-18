@@ -1,20 +1,29 @@
 from flask import Flask, Response, render_template
 import cv2
 from ultralytics import YOLO
-#work
+
 # Initialize the Flask app
 app = Flask(__name__)
 
-# Load the YOLO model
+# Load the YOLO model (adjust path if necessary)
 model = YOLO('yolov8n.pt')
 
-# Open the webcam
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Error: Could not access the camera.")
-    exit(1)
+# Global variable for camera
+cap = None
+
+def initialize_camera():
+    global cap
+    cap = cv2.VideoCapture(0)  # Open the default camera (index 0)
+    if not cap.isOpened():
+        raise Exception("Error: Could not open camera.")
+
+def release_camera():
+    global cap
+    if cap:
+        cap.release()
 
 def generate_frames():
+    global cap
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -53,7 +62,6 @@ def generate_frames():
         _, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
         
-
         # Yield the frame in byte format
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
@@ -64,9 +72,13 @@ def index():
 
 @app.route('/video_feed')
 def video_feed():
+    initialize_camera()  # Initialize camera when video feed is requested
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/stop_feed')
+def stop_feed():
+    release_camera()  # Release the camera when the feed is stopped
+    return "Camera feed stopped"
+
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0',port=8080)
-
-
+    app.run(debug=True, host='0.0.0.0', port=8080)
