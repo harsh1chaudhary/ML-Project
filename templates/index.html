@@ -7,83 +7,93 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
             margin: 0;
-            position: relative;
-            text-align: center;
-            transition: background-color 1s ease; /* Smooth transition for color change */
+            min-height: 100vh;
+            background-color: #f9f9f9;
         }
-
-        /* Content Layer */
-        .content {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Heading style */
         h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 20px;
-            color: #444;
         }
-
-        /* Image styling: Centered and resized */
         img {
-            width: 50%;   /* Reduce width to 50% */
-            height: 50%;  /* Reduce height to 50% */
-            object-fit: contain;  /* Ensure the aspect ratio is maintained */
-            border: 4px solid #444;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Footer text styling */
-        p {
+            width: 60%;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 8px;
             margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        select, input, button {
             font-size: 1rem;
-            color: #666;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="content">
-        <h1>Real-time Object Detection</h1>
-        <img src="{{ url_for('video_feed') }}" alt="Real-time Object Detection Feed">
-        <p>Press "Ctrl + C" in the terminal to stop the server.</p>
-    </div>
+    <h1>Object Detection</h1>
+    <form id="controlForm" enctype="multipart/form-data">
+        <label for="source">Select Video Source:</label>
+        <select id="source" name="source">
+            <option value="pre-recorded" selected>Pre-Recorded Video</option>
+            <option value="camera">Real-Time Camera</option>
+        </select>
+        <br>
+        <label for="videoFile">Choose Video File:</label>
+        <input type="file" id="videoFile" name="videoFile" accept="video/*">
+        <br>
+        <button type="submit">Start</button>
+    </form>
+    <img id="videoFeed" src="/video_feed" alt="Object Detection Feed">
 
     <script>
-        // Function to fetch counts and change background color dynamically
-        function updateBackgroundColor() {
-            fetch('/get_counts')
-                .then(response => response.json())
-                .then(data => {
-                    const humanCount = data.human_count;
-                    const totalObjects = data.total_objects;
+        const form = document.getElementById('controlForm');
+        const videoFeed = document.getElementById('videoFeed');
 
-                    // Decide background color based on object count
-                    let backgroundColor;
-                    if (humanCount > totalObjects) {
-                        backgroundColor = '#6ccacf'; // Light cyan for more humans
-                    } else if (totalObjects > humanCount) {
-                        backgroundColor = '#a7e6e4'; // Light blue for more objects
-                    } else {
-                        backgroundColor = '#f1f1f1'; // Neutral gray for equal numbers
-                    }
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                    // Set the background color dynamically
-                    document.body.style.backgroundColor = backgroundColor;
-                })
-                .catch(error => console.error('Error fetching data:', error));
-        }
+            const source = document.getElementById('source').value;
+            const videoFile = document.getElementById('videoFile').files[0];
 
-        // Update the background color every second
-        setInterval(updateBackgroundColor, 1000);
+            if (source === 'camera') {
+                await fetch('/set_source', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: 'camera' })
+                });
+            } else if (videoFile) {
+                const formData = new FormData();
+                formData.append('videoFile', videoFile);
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                await fetch('/set_source', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: 'uploaded', filename: result.filename })
+                });
+            }
+
+            // Refresh the video feed done
+            videoFeed.src = `${videoFeed.src.split('?')[0]}?${new Date().getTime()}`;
+        });
     </script>
 </body>
 </html>
